@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EstudIA – Organiza tus tareas, evaluaciones y horarios</title>
+<style>
+:root{--ink:#14213d;--muted:#5b6785;--paper:#f2f6fc;--card:#fff;--line:#d6dfee;--blue:#2f5bea;--blue-d:#1f43b8;--mark:#ffd23f;--red:#b83227;--ok:#1b7f56}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:0 18px}
+header{padding:34px 0 18px}
+h1{margin:0;font:800 clamp(2.2rem,6vw,3.4rem)/1 "Trebuchet MS","Segoe UI",sans-serif;letter-spacing:-.02em}
+h1 span{background:linear-gradient(transparent 58%,var(--mark) 58%,var(--mark) 92%,transparent 92%);padding:0 .1em}
+.lead{margin:10px 0 0;color:var(--muted);max-width:60ch}
+.resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:22px 0 8px}
+.dato{background:var(--ink);color:#fff;border-radius:10px;padding:14px 16px}
+.dato b{display:block;font-size:1.5rem;line-height:1.2}
+.dato small{color:#c3cde4;font-size:.9rem}
+nav{display:flex;gap:6px;margin:22px 0 0;border-bottom:2px solid var(--line);overflow-x:auto}
+nav button{font:600 1rem "Segoe UI",sans-serif;background:none;border:0;padding:12px 18px;color:var(--muted);cursor:pointer;border-bottom:4px solid transparent;margin-bottom:-2px;white-space:nowrap}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--blue)}
+main{padding:22px 0 60px}
+section[hidden]{display:none}
+.panel{display:grid;grid-template-columns:minmax(0,320px) 1fr;gap:22px;align-items:start}
+form{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:12px}
+form h2,.lista-h{margin:0;font-size:1.15rem}
+label{display:grid;gap:4px;font-weight:600;font-size:.92rem}
+input,select{font:inherit;padding:10px 11px;border:1px solid #b9c5dd;border-radius:7px;background:#fff;color:var(--ink);width:100%}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{font:700 1rem "Segoe UI",sans-serif;background:var(--blue);color:#fff;border:0;border-radius:7px;padding:11px 16px;cursor:pointer}
+.btn:hover{background:var(--blue-d)}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px;box-shadow:0 0 0 5px var(--ink)}
+ul{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:10px}
+li.item{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--blue);border-radius:8px;padding:12px 14px;display:flex;gap:12px;align-items:center}
+li.item.urgente{border-left-color:var(--red)}
+li.item.hecha{border-left-color:var(--ok);opacity:.65}
+li.item.hecha .t{text-decoration:line-through}
+.cuerpo{flex:1;min-width:0}
+.t{font-weight:700;overflow-wrap:anywhere}
+.m{font-size:.9rem;color:var(--muted)}
+.m .alerta{color:var(--red);font-weight:700}
+.chk{width:22px;height:22px;accent-color:var(--ok);flex:none}
+.del{background:none;border:1px solid var(--line);border-radius:7px;color:var(--muted);padding:6px 10px;cursor:pointer;font:inherit;font-size:.9rem}
+.del:hover{color:var(--red);border-color:var(--red)}
+.vacio{background:var(--card);border:2px dashed var(--line);border-radius:10px;padding:22px;color:var(--muted)}
+.semana{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:12px}
+.dia{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;min-height:120px}
+.dia.hoy{border:2px solid var(--blue)}
+.dia h3{margin:0 0 8px;font-size:.95rem}
+.bloque{background:#e8eefc;border-radius:6px;padding:7px 8px;margin-bottom:6px;font-size:.88rem}
+.bloque b{display:block;overflow-wrap:anywhere}
+.bloque button{background:none;border:0;color:var(--red);cursor:pointer;font:inherit;font-size:.82rem;padding:2px 0 0}
+.dia p{margin:0;color:var(--muted);font-size:.85rem}
+footer{color:var(--muted);font-size:.85rem;padding-bottom:30px}
+@media(max-width:860px){.panel{grid-template-columns:1fr}.semana{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.semana{grid-template-columns:1fr}.row{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <h1><span>EstudIA</span></h1>
+  <p class="lead">Tus tareas, evaluaciones y horarios de estudio en un solo lugar, para que no dependas de la agenda ni de la memoria.</p>
+  <div class="resumen" aria-live="polite">
+    <div class="dato"><b id="rPend">0</b><small>tareas pendientes</small></div>
+    <div class="dato"><b id="rEval">—</b><small id="rEvalT">sin evaluaciones próximas</small></div>
+    <div class="dato"><b id="rHoy">0</b><small>bloques de estudio hoy</small></div>
+  </div>
+  <nav role="tablist" aria-label="Secciones">
+    <button role="tab" id="tab-tareas" aria-selected="true" aria-controls="tareas" data-tab="tareas">Tareas</button>
+    <button role="tab" id="tab-evals" aria-selected="false" aria-controls="evals" data-tab="evals">Evaluaciones</button>
+    <button role="tab" id="tab-horario" aria-selected="false" aria-controls="horario" data-tab="horario">Horario de estudio</button>
+  </nav>
+</header>
+
+<main class="wrap">
+  <section id="tareas" role="tabpanel" aria-labelledby="tab-tareas" class="panel">
+    <form id="fTarea">
+      <h2>Agregar tarea</h2>
+      <label>Tarea<input id="tNombre" required maxlength="80" placeholder="Ej: Taller de álgebra"></label>
+      <label>Materia<input id="tMateria" maxlength="40" placeholder="Ej: Matemáticas"></label>
+      <label>Fecha de entrega<input id="tFecha" type="date" required></label>
+      <button class="btn" type="submit">Agregar tarea</button>
+    </form>
+    <div><h2 class="lista-h">Mis tareas</h2><ul id="lTareas"></ul></div>
+  </section>
+
+  <section id="evals" role="tabpanel" aria-labelledby="tab-evals" class="panel" hidden>
+    <form id="fEval">
+      <h2>Agregar evaluación</h2>
+      <label>Evaluación<input id="eNombre" required maxlength="80" placeholder="Ej: Examen de física"></label>
+      <label>Materia<input id="eMateria" maxlength="40" placeholder="Ej: Física"></label>
+      <label>Fecha<input id="eFecha" type="date" required></label>
+      <button class="btn" type="submit">Agregar evaluación</button>
+    </form>
+    <div><h2 class="lista-h">Próximas evaluaciones</h2><ul id="lEvals"></ul></div>
+  </section>
+
+  <section id="horario" role="tabpanel" aria-labelledby="tab-horario" hidden>
+    <div class="panel">
+      <form id="fHorario">
+        <h2>Agregar bloque de estudio</h2>
+        <label>Materia o tema<input id="hMateria" required maxlength="40" placeholder="Ej: Inglés"></label>
+        <label>Día
+          <select id="hDia">
+            <option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option>
+            <option value="3">Jueves</option><option value="4">Viernes</option><option value="5">Sábado</option><option value="6">Domingo</option>
+          </select>
+        </label>
+        <div class="row">
+          <label>Desde<input id="hIni" type="time" required value="15:00"></label>
+          <label>Hasta<input id="hFin" type="time" required value="16:00"></label>
+        </div>
+        <button class="btn" type="submit">Agregar bloque</button>
+        <p id="hError" class="m" role="alert" style="margin:0;color:var(--red)"></p>
+      </form>
+      <div><h2 class="lista-h">Mi semana</h2><div class="semana" id="semana"></div></div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">Tus datos se guardan en este navegador. Si borras los datos del navegador o cambias de dispositivo, no se conservan.</footer>
+
+<script>
+(function(){
+  var KEY = 'estudia-v1';
+  var DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  var S = {tareas:[], evals:[], horario:[]};
+  try { var raw = localStorage.getItem(KEY); if (raw) { var p = JSON.parse(raw); S.tareas = p.tareas || []; S.evals = p.evals || []; S.horario = p.horario || []; } } catch (e) {}
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+  function $(id){ return document.getElementById(id); }
+  function el(tag, cls, text){ var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function hoy(){ var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function parse(s){ var a = s.split('-').map(Number); return new Date(a[0], a[1]-1, a[2]); }
+  function diff(s){ return Math.round((parse(s) - hoy()) / 86400000); }
+  function fmt(s){ return parse(s).toLocaleDateString('es-CO', {weekday:'short', day:'numeric', month:'short'}); }
+  function cuando(n){
+    if (n < 0) return 'Venció hace ' + (-n) + (n === -1 ? ' día' : ' días');
+    if (n === 0) return 'Hoy';
+    if (n === 1) return 'Mañana';
+    return 'En ' + n + ' días';
+  }
+  function borrar(lista, id){ S[lista] = S[lista].filter(function(x){ return x.id !== id; }); save(); render(); }
+
+  function itemBase(cls, titulo, metaNodes, onDel, nombreAria){
+    var li = el('li', 'item ' + cls);
+    var body = el('div', 'cuerpo');
+    body.appendChild(el('div', 't', titulo));
+    var m = el('div', 'm');
+    metaNodes.forEach(function(n){ m.appendChild(n); });
+    body.appendChild(m);
+    li.appendChild(body);
+    var b = el('button', 'del', 'Eliminar');
+    b.type = 'button';
+    b.setAttribute('aria-label', 'Eliminar ' + nombreAria);
+    b.onclick = onDel;
+    li.appendChild(b);
+    return li;
+  }
+  function txt(s){ return document.createTextNode(s); }
+
+  function renderTareas(){
+    var ul = $('lTareas'); ul.textContent = '';
+    if (!S.tareas.length){ var v = el('li', 'vacio', 'Aún no tienes tareas. Agrega la primera con el formulario.'); ul.appendChild(v); return; }
+    var orden = S.tareas.slice().sort(function(a, b){
+      if (a.hecha !== b.hecha) return a.hecha ? 1 : -1;
+      return a.fecha < b.fecha ? -1 : 1;
+    });
+    orden.forEach(function(t){
+      var n = diff(t.fecha);
+      var urgente = !t.hecha && n <= 1;
+      var meta = [];
+      if (t.materia) meta.push(txt(t.materia + ' · '));
+      meta.push(txt(fmt(t.fecha) + ' · '));
+      var c = el('span', urgente ? 'alerta' : '', t.hecha ? 'Completada' : cuando(n));
+      meta.push(c);
+      var li = itemBase(t.hecha ? 'hecha' : (urgente ? 'urgente' : ''), t.nombre, meta, function(){ borrar('tareas', t.id); }, 'tarea ' + t.nombre);
+      var chk = el('input', 'chk'); chk.type = 'checkbox'; chk.checked = !!t.hecha;
+      chk.setAttribute('aria-label', 'Marcar como completada: ' + t.nombre);
+      chk.onchange = function(){ t.hecha = chk.checked; save(); render(); };
+      li.insertBefore(chk, li.firstChild);
+      ul.appendChild(li);
+    });
+  }
+
+  function renderEvals(){
+    var ul = $('lEvals'); ul.textContent = '';
+    if (!S.evals.length){ ul.appendChild(el('li', 'vacio', 'No tienes evaluaciones registradas. Agrega una para ver cuántos días faltan.')); return; }
+    S.evals.slice().sort(function(a, b){ return a.fecha < b.fecha ? -1 : 1; }).forEach(function(e){
+      var n = diff(e.fecha);
+      var pasada = n < 0;
+      var meta = [];
+      if (e.materia) meta.push(txt(e.materia + ' · '));
+      meta.push(txt(fmt(e.fecha) + ' · '));
+      meta.push(el('span', (!pasada && n <= 3) ? 'alerta' : '', pasada ? 'Ya pasó' : cuando(n)));
+      ul.appendChild(itemBase(pasada ? 'hecha' : (n <= 3 ? 'urgente' : ''), e.nombre, meta, function(){ borrar('evals', e.id); }, 'evaluación ' + e.nombre));
+    });
+  }
+
+  function renderHorario(){
+    var cont = $('semana'); cont.textContent = '';
+    var idxHoy = (new Date().getDay() + 6) % 7;
+    DIAS.forEach(function(nombre, i){
+      var col = el('div', 'dia' + (i === idxHoy ? ' hoy' : ''));
+      col.appendChild(el('h3', '', nombre + (i === idxHoy ? ' (hoy)' : '')));
+      var bloques = S.horario.filter(function(b){ return b.dia === i; }).sort(function(a, b){ return a.ini < b.ini ? -1 : 1; });
+      if (!bloques.length) col.appendChild(el('p', '', 'Libre'));
+      bloques.forEach(function(b){
+        var d = el('div', 'bloque');
+        d.appendChild(el('b', '', b.materia));
+        d.appendChild(txt(b.ini + ' – ' + b.fin));
+        d.appendChild(el('br'));
+        var x = el('button', '', 'Quitar'); x.type = 'button';
+        x.setAttribute('aria-label', 'Quitar bloque de ' + b.materia + ' del ' + nombre);
+        x.onclick = function(){ borrar('horario', b.id); };
+        d.appendChild(x);
+        col.appendChild(d);
+      });
+      cont.appendChild(col);
+    });
+  }
+
+  function renderResumen(){
+    $('rPend').textContent = S.tareas.filter(function(t){ return !t.hecha; }).length;
+    var prox = S.evals.filter(function(e){ return diff(e.fecha) >= 0; }).sort(function(a, b){ return a.fecha < b.fecha ? -1 : 1; })[0];
+    if (prox){ $('rEval').textContent = cuando(diff(prox.fecha)); $('rEvalT').textContent = prox.nombre; }
+    else { $('rEval').textContent = '—'; $('rEvalT').textContent = 'sin evaluaciones próximas'; }
+    var idx = (new Date().getDay() + 6) % 7;
+    $('rHoy').textContent = S.horario.filter(function(b){ return b.dia === idx; }).length;
+  }
+
+  function render(){ renderTareas(); renderEvals(); renderHorario(); renderResumen(); }
+
+  $('fTarea').onsubmit = function(ev){
+    ev.preventDefault();
+    var nombre = $('tNombre').value.trim(); if (!nombre) return;
+    S.tareas.push({id: uid(), nombre: nombre, materia: $('tMateria').value.trim(), fecha: $('tFecha').value, hecha: false});
+    save(); this.reset(); render();
+  };
+  $('fEval').onsubmit = function(ev){
+    ev.preventDefault();
+    var nombre = $('eNombre').value.trim(); if (!nombre) return;
+    S.evals.push({id: uid(), nombre: nombre, materia: $('eMateria').value.trim(), fecha: $('eFecha').value});
+    save(); this.reset(); render();
+  };
+  $('fHorario').onsubmit = function(ev){
+    ev.preventDefault();
+    var ini = $('hIni').value, fin = $('hFin').value, mat = $('hMateria').value.trim();
+    if (!mat) return;
+    if (fin <= ini){ $('hError').textContent = 'La hora final debe ser posterior a la hora de inicio.'; return; }
+    $('hError').textContent = '';
+    S.horario.push({id: uid(), materia: mat, dia: Number($('hDia').value), ini: ini, fin: fin});
+    save(); $('hMateria').value = ''; render();
+  };
+
+  var tabs = document.querySelectorAll('nav button');
+  Array.prototype.forEach.call(tabs, function(b){
+    b.onclick = function(){
+      Array.prototype.forEach.call(tabs, function(o){
+        var on = o === b;
+        o.setAttribute('aria-selected', on ? 'true' : 'false');
+        $(o.dataset.tab).hidden = !on;
+      });
+    };
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
